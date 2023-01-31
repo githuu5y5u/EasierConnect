@@ -21,10 +21,10 @@ jobs:
         # Include amd64 on all platforms.
         goos: [windows, linux, darwin]
         goarch: [amd64, 386]
-        #exclude:
+        exclude:
           # Exclude i386 on darwin.
-          #- goarch: 386
-          #  goos: darwin
+          - goarch: 386
+            goos: darwin
         include:
           # BEGIN Linux ARM 5 6 7
           - goos: linux
