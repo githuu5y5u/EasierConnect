@@ -8,6 +8,7 @@ import (
 	"gvisor.dev/gvisor/pkg/tcpip/stack"
 	"gvisor.dev/gvisor/pkg/tcpip/transport/tcp"
 	"gvisor.dev/gvisor/pkg/tcpip/transport/udp"
+	"time"
 )
 
 const defaultNIC tcpip.NICID = 1
@@ -110,6 +111,10 @@ func SetupStack(ip []byte, endpoint *EasyConnectEndpoint) *stack.Stack {
 	ipStack.SetTransportProtocolOption(tcp.ProtocolNumber, &sOpt)
 	cOpt := tcpip.CongestionControlOption("cubic")
 	ipStack.SetTransportProtocolOption(tcp.ProtocolNumber, &cOpt)
+	kaiOpt := tcpip.KeepaliveIdleOption(5 * time.Minute)
+	ipStack.SetOption(&kaiOpt)
+	kaOpt := tcpip.KeepaliveIntervalOption(5 * time.Minute)
+	ipStack.SetOption(&kaOpt)
 	ipStack.AddRoute(tcpip.Route{Destination: header.IPv4EmptySubnet, NIC: defaultNIC})
 
 	return ipStack

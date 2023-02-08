@@ -51,9 +51,9 @@ func StartClient(host string, port int, username string, password string, twfId 
 	} else {
 		ip, err = client.Login(username, password)
 		if err == ERR_NEXT_AUTH_SMS {
-			fmt.Print(">>>Please enter your sms code<<<:")
+			log.Println(">>>Please enter your sms code<<<:")
 			smsCode := ""
-			_, err := fmt.Scan(&smsCode)
+			_, err = fmt.Scan(&smsCode)
 			if err != nil {
 				panic(err)
 				return
@@ -61,9 +61,9 @@ func StartClient(host string, port int, username string, password string, twfId 
 
 			ip, err = client.AuthSMSCode(smsCode)
 		} else if err == ERR_NEXT_AUTH_TOTP {
-			fmt.Print(">>>Please enter your TOTP Auth code<<<:")
+			log.Println(">>>Please enter your TOTP Auth code<<<:")
 			TOTPCode := ""
-			_, err := fmt.Scan(&TOTPCode)
+			_, err = fmt.Scan(&TOTPCode)
 			if err != nil {
 				panic(err)
 				return
@@ -131,7 +131,7 @@ func (client *EasyConnectClient) LoginByTwfId(twfId string) ([]byte, error) {
 		return nil, err
 	}
 
-	// Parse Server config
+	// Parse Server buildconfig
 	if ParseServConfig {
 		parser.ParseResourceLists(client.server, twfId, DebugDump)
 		parser.ParseConfLists(client.server, twfId, DebugDump)

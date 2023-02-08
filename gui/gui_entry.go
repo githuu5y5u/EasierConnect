@@ -1,7 +1,7 @@
-package main
+package gui
 
 import "EasierConnect/gui/component"
 
-func main() {
+func StartGUI() {
 	component.EasierConnectUI()
 }

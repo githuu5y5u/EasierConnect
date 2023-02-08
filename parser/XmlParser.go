@@ -30,8 +30,8 @@ func ParseXml(in any, host string, path string, twfid string) (string, bool) {
 	var buf bytes.Buffer
 	io.Copy(&buf, resp.Body)
 	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
+		err0 := Body.Close()
+		if err0 != nil {
 		}
 	}(resp.Body)
 

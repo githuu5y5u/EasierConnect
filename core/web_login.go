@@ -108,7 +108,10 @@ func WebLogin(server string, username string, password string) (string, error) {
 	}
 
 	buf.Reset()
-	io.Copy(&buf, resp.Body)
+	_, err = io.Copy(&buf, resp.Body)
+	if err != nil {
+		panic(err)
+	}
 	defer resp.Body.Close()
 
 	// log.Printf("First stage login response: %s", string(buf[:n]))
@@ -129,7 +132,10 @@ func WebLogin(server string, username string, password string) (string, error) {
 		}
 
 		buf.Reset()
-		io.Copy(&buf, resp.Body)
+		_, err = io.Copy(&buf, resp.Body)
+		if err != nil {
+			panic(err)
+		}
 		defer resp.Body.Close()
 
 		if !strings.Contains(buf.String(), "验证码已发送到您的手机") && !strings.Contains(buf.String(), "<USER_PHONE>") {
@@ -193,7 +199,10 @@ func AuthSms(server string, username string, password string, twfId string, smsC
 	}
 
 	var buf bytes.Buffer
-	io.Copy(&buf, resp.Body)
+	_, err = io.Copy(&buf, resp.Body)
+	if err != nil {
+		panic(err)
+	}
 	defer resp.Body.Close()
 
 	if !strings.Contains(buf.String(), "Auth sms suc") {
@@ -230,8 +239,10 @@ func TOTPAuth(server string, username string, password string, twfId string, TOT
 	}
 
 	var buf bytes.Buffer
-	io.Copy(&buf, resp.Body)
-
+	_, err = io.Copy(&buf, resp.Body)
+	if err != nil {
+		panic(err)
+	}
 	defer resp.Body.Close()
 
 	if !strings.Contains(buf.String(), "suc") {

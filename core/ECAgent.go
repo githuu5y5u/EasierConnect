@@ -1,7 +1,6 @@
-package listener
+package core
 
 import (
-	"EasierConnect/core"
 	"EasierConnect/core/config"
 	"EasierConnect/parser"
 	"bytes"
@@ -69,8 +68,8 @@ func HelloServer(w http.ResponseWriter, req *http.Request) {
 		entry := strings.Split(ent, "=")
 		reqMap[entry[0]] = entry[1]
 
-		if core.DebugDump {
-			fmt.Printf("request > %s\n", ent)
+		if DebugDump {
+			log.Printf("request > %s\n", ent)
 		}
 	}
 
@@ -124,12 +123,12 @@ func HelloServer(w http.ResponseWriter, req *http.Request) {
 
 				EncryptedTwfID, err := hex.DecodeString(EncryptedTwfIDHex)
 				if err != nil {
-					fmt.Println(err)
+					log.Println(err)
 				}
 
 				DecryptedTwfid, err := rsa.DecryptPKCS1v15(rand.Reader, Env.privateKey, EncryptedTwfID)
 				if err != nil {
-					fmt.Println(err)
+					log.Println(err)
 				}
 
 				if ECAgentResult.twfID == "" {
@@ -164,7 +163,7 @@ func HelloServer(w http.ResponseWriter, req *http.Request) {
 			if ok {
 				result, err := json.Marshal(confWeb)
 				if err != nil {
-					fmt.Println("Cannot convert Json.", err)
+					log.Println("Cannot convert Json.", err)
 					return
 				}
 
@@ -189,7 +188,7 @@ func HelloServer(w http.ResponseWriter, req *http.Request) {
 			if ok {
 				result, err := json.Marshal(ResourceList)
 				if err != nil {
-					fmt.Println("Cannot convert Json.", err)
+					log.Println("Cannot convert Json.", err)
 					return
 				}
 
@@ -250,8 +249,8 @@ func HelloServer(w http.ResponseWriter, req *http.Request) {
 
 	w.Header().Set("Content-Type", "text/javascript; charset=UTF-8")
 
-	if core.DebugDump {
-		fmt.Printf("response > %s \n", response.String())
+	if DebugDump {
+		log.Printf("response > %s \n", response.String())
 	}
 
 	_, err := w.Write([]byte(response.String()))
@@ -268,7 +267,7 @@ func startClient(config ECAgentResult_) {
 
 	log.Printf("Starting Client ..... \n")
 
-	core.StartClient(config.server, port, "", "", config.twfID)
+	StartClient(config.server, port, "", "", config.twfID)
 }
 
 /*
