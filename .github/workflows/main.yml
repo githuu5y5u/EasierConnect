@@ -96,6 +96,13 @@ jobs:
         run: |
           mkdir -p build_assets
           go build -v -o build_assets/EasierConnect -trimpath -ldflags "-s -w -buildid=" .
+      - name: Run UPX
+        uses: crazy-max/ghaction-upx@v2
+        with:
+          version: latest
+          files: |
+            ./EasierConnect
+          args: -9
       - name: Rename Windows EasierConnect
         if: matrix.goos == 'windows'
         run: |
