@@ -15,63 +15,27 @@ on:
 permissions: write-all
 
 jobs:
-  build:
+  buildGUI:
     strategy:
       matrix:
-        # Include amd64 on all platforms.
-        goos: [windows, linux, darwin]
-        goarch: [amd64, 386]
-        exclude:
-          # Exclude i386 on darwin.
-          - goarch: 386
-            goos: darwin
         include:
-          # BEGIN Linux ARM 5 6 7
-          - goos: linux
-            goarch: arm
-            goarm: 7
-          - goos: linux
-            goarch: arm
-            goarm: 6
-          - goos: linux
-            goarch: arm
-            goarm: 5
-          # END Linux ARM 5 6 7
-          # BEGIN Windows ARM 7
           - goos: windows
-            goarch: arm
-            goarm: 7
-          # END Windows ARM 7
-          # BEGIN Other architectures
-          - goos: darwin
-            goarch: arm64
-          - goos: linux
-            goarch: arm64
-          - goos: linux
-            goarch: riscv64
+            goarch: amd64
           - goos: windows
-            goarch: arm64
-          - goos: android
-            goarch: arm64
-          # BEGIN MIPS
+            goarch: 386
           - goos: linux
-            goarch: mips64
-          - goos: linux
-            goarch: mips64le
-          - goos: linux
-            goarch: mipsle
-          - goos: linux
-            goarch: mips
-          # END MIPS
-          # END Other architectures
+            goarch: amd64
+      #    - goos: linux  太菜了, 暂时不知道怎么直接在64位机上编译 32位 linux的 cgo.
+      #      goarch: 386
       fail-fast: false
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     env:
       GOOS: ${{ matrix.goos }}
       GOARCH: ${{ matrix.goarch }}
       GOARM: ${{ matrix.goarm }}
-      CGO_ENABLED: 0
+      CXX_FOR_TARGET: ${{ matrix.cxx }}
+      CGO_ENABLED: 1
 
     steps:
       - name: Checkout codebase
@@ -88,20 +52,35 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: ^1.19
-
       - name: Get project dependencies
-        run: go mod download
-
+        run: |
+          go mod download
+          sudo apt-get update
+          sudo apt-get install gcc build-essential gcc-multilib g++-multilib gcc-mingw-w64
+      - name: GCC for windows on amd64
+        if: matrix.goos == 'windows' && matrix.GOARCH == 'amd64'
+        run: |
+          go env -w CC=x86_64-w64-mingw32-gcc
+      - name: GCC for windows on i386
+        if: matrix.goos == 'windows' && matrix.GOARCH == '386'
+        run: |
+          go env -w CC=i686-w64-mingw32-gcc
+      - name: Linux environment
+        if: matrix.goos == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install libgl1-mesa-dev xorg-dev
       - name: Build
         run: |
+          echo "CC: $CC"
           mkdir -p build_assets
-          CGO_ENABLED=1 go build -v -o build_assets/EasierConnect -trimpath -ldflags "-s -w -buildid=" .
+          go build -v -o build_assets/EasierConnect -trimpath -ldflags "-s -w -buildid=" .
       - name: Run UPX
         uses: crazy-max/ghaction-upx@v2
         with:
           version: latest
           files: |
-            ./EasierConnect
+            ./build_assets/EasierConnect
           args: -9
       - name: Rename Windows EasierConnect
         if: matrix.goos == 'windows'
@@ -111,7 +90,7 @@ jobs:
       - name: Create ZIP archive
         run: |
           pushd build_assets || exit 1
-          zip -9vr ../EasierConnect-$ASSET_NAME.zip .
+          zip -9vr ../EasierConnect-GUI-$ASSET_NAME.zip .
           popd || exit 1
       
       - name: Upload release binary
@@ -119,5 +98,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          gh release upload ${{ github.event.release.tag_name }} EasierConnect-${{ steps.get_filename.outputs.ASSET_NAME }}.zip
-
+          gh release upload ${{ github.event.release.tag_name }} EasierConnect-GUI-${{ steps.get_filename.outputs.ASSET_NAME }}.zip
