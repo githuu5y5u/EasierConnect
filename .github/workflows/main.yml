@@ -95,7 +95,7 @@ jobs:
       - name: Build
         run: |
           mkdir -p build_assets
-          go build -v -o build_assets/EasierConnect -trimpath -ldflags "-s -w -buildid=" .
+          CGO_ENABLED=1 go build -v -o build_assets/EasierConnect -trimpath -ldflags "-s -w -buildid=" .
       - name: Run UPX
         uses: crazy-max/ghaction-upx@v2
         with:
