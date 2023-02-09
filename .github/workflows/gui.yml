@@ -15,67 +15,167 @@ on:
 permissions: write-all
 
 jobs:
-  buildGUI:
+  build_job:
+  
+    runs-on: ${{ matrix.host_os }}
+    name: Build on ${{ matrix.goos }} ${{ matrix.goarch }} ${{ matrix.base_image }}
+
     strategy:
       matrix:
         include:
-          - goos: windows
-            goarch: amd64
-          - goos: windows
+        #Linux x86
+          - arch: none
+            distro: none
+            base_image: i386/debian:bullseye
+            desc: i386_linux
+            goos: linux
             goarch: 386
-          - goos: linux
+            host_os: ubuntu-20.04
+          - arch: none
+            distro: none
+            base_image: amd64/debian:bullseye
+            desc: amd64_linux
+            goos: linux
             goarch: amd64
-      #    - goos: linux  太菜了, 暂时不知道怎么直接在64位机上编译 32位 linux的 cgo.
-      #      goarch: 386
+            host_os: ubuntu-20.04
+        #Linux arm64
+          - arch: none
+            distro: none
+            base_image: arm64v8/debian:bullseye
+            desc: arm64v8_linux
+            goos: linux
+            goarch: arm64
+            host_os: ubuntu-20.04
+        # Windows x86
+          - arch: none
+            distro: none
+            base_image: i386/debian:bullseye
+            desc: i386_windows
+            goos: windows
+            goarch: 386
+            host_os: ubuntu-20.04
+          - arch: none
+            distro: none
+            base_image: amd64/debian:bullseye
+            desc: amd64_windows
+            goos: windows
+            goarch: amd64
+            host_os: ubuntu-20.04
+         # OSX
+          - desc: darwin_amd64
+            goos: darwin
+            goarch: amd64
+            host_os: macos-11
+         # OS end
       fail-fast: false
-
-    runs-on: ubuntu-20.04
-    env:
-      GOOS: ${{ matrix.goos }}
-      GOARCH: ${{ matrix.goarch }}
-      GOARM: ${{ matrix.goarm }}
-      CXX_FOR_TARGET: ${{ matrix.cxx }}
-      CGO_ENABLED: 1
-
     steps:
-      - name: Checkout codebase
-        uses: actions/checkout@v3
-
-      - name: Show workflow information
-        id: get_filename
+      - uses: actions/checkout@v3
+      - name: mkdir for docker
         run: |
-          export _NAME=$GOOS-$GOARCH$GOARM
-          echo "GOOS: $GOOS, GOARCH: $GOARCH, GOARM: $GOARM, RELEASE_NAME: $_NAME"
-          echo "::set-output name=ASSET_NAME::$_NAME"
-          echo "ASSET_NAME=$_NAME" >> $GITHUB_ENV
-      - name: Set up Go
-        uses: actions/setup-go@v3
+           mkdir -p build_assets/${{ matrix.desc }}
+      - uses: uraimo/run-on-arch-action@v2
+        if: matrix.host_os == 'ubuntu-20.04'
+        name: Build artifact
+        id: build
         with:
-          go-version: ^1.19
-      - name: Get project dependencies
+          arch: ${{ matrix.arch }}
+          distro: ${{ matrix.distro }}
+          
+          base_image: ${{ matrix.base_image }}
+          
+          desc: ${{ matrix.desc }}
+
+          # Not required, but speeds up builds
+          githubToken: ${{ github.token }}
+
+          # Mount the artifacts directory as /artifacts in the container
+          dockerRunArgs: |
+            --volume "${PWD}:/buildDir"
+
+          # Pass some environment variables to the container
+          env: | # YAML, but pipe character is necessary
+            GOOS: ${{ matrix.goos }}
+            GOARCH: ${{ matrix.goarch }}
+            CGO_ENABLED: 1
+
+          # The shell to run commands with in the container
+          shell: /bin/sh
+
+          # Install some dependencies in the container. This speeds up builds if
+          # you are also using githubToken. Any dependencies installed here will
+          # be part of the container image that gets cached, so subsequent
+          # builds don't have to re-install them. The image layer is cached
+          # publicly in your project's package repository, so it is vital that
+          # no secrets are present in the container state or logs.
+          install: |
+            case "${{ matrix.base_image }}" in
+              *ubuntu*|*debian*)
+                apt-get update -q -y
+                apt-get install -y git gcc build-essential gcc-mingw-w64 wget libgl1-mesa-dev xorg-dev
+                
+                # remove old go-lang
+                rm -rf /usr/local/go
+                rm -rf /usr/lib/go-1.*
+                wget https://go.dev/dl/go1.19.5.linux-${{ matrix.GOARCH }}${{ matrix.suffix }}.tar.gz
+                tar -xf go1.19.5.linux-${{ matrix.GOARCH }}${{ matrix.suffix }}.tar.gz
+                mv go /usr/local
+                ;;
+            esac
+            
+            export GOROOT=/usr/local/go
+            export PATH=$GOROOT/bin:$PATH
+            
+            case "${{ matrix.goos }}" in
+              linux)
+                case "${{ matrix.goarch }}" in
+                  arm64)
+                    apt-get install -y gcc-arm*
+                    go env -w CC=arm-linux-gnueabi-gcc
+                    go env -w GOARM=${{ matrix.goarm }}
+                    ;;
+                  amd64)
+                    
+                    ;;
+                esac
+                ;;
+              windows)
+                case "${{ matrix.goarch }}" in
+                  386)
+                    go env -w CC=i686-w64-mingw32-gcc
+                    ;;
+                  amd64)
+                    go env -w CC=x86_64-w64-mingw32-gcc
+                    ;;
+                esac
+                ;;
+            esac
+
+          # Produce a binary artifact and place it in the mounted volume
+          run: |
+            export GOROOT=/usr/local/go
+            export PATH=$GOROOT/bin:$PATH
+            go version
+            cp -r /buildDir /tmp/buildDir
+            cd /tmp/buildDir
+            go build -v -o build_assets/${{ matrix.desc }}/EasierConnect -trimpath -ldflags "-s -w -buildid=" .
+            ls build_assets
+            cp build_assets/${{ matrix.desc }}/EasierConnect /buildDir/build_assets/${{ matrix.desc }}/EasierConnect
+      - name: Setup Go environment for osx
+        if: matrix.host_os == 'macos-11'
+        uses: actions/setup-go@v3.5.0
+        with:
+             go-version: 1.19.5
+      - name: build for osx
+        if: matrix.host_os == 'macos-11'
         run: |
-          go mod download
-          sudo apt-get update
-          sudo apt-get install gcc build-essential gcc-multilib g++-multilib gcc-mingw-w64
-      - name: GCC for windows on amd64
-        if: matrix.goos == 'windows' && matrix.GOARCH == 'amd64'
+             go version
+             CGO_ENABLED=1 go build -v -o build_assets/${{ matrix.desc }}/EasierConnect -trimpath -ldflags "-s -w -buildid=" .
+      - name: Copy the result from docker output folder
         run: |
-          go env -w CC=x86_64-w64-mingw32-gcc
-      - name: GCC for windows on i386
-        if: matrix.goos == 'windows' && matrix.GOARCH == '386'
-        run: |
-          go env -w CC=i686-w64-mingw32-gcc
-      - name: Linux environment
-        if: matrix.goos == 'linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install libgl1-mesa-dev xorg-dev
-      - name: Build
-        run: |
-          echo "CC: $CC"
-          mkdir -p build_assets
-          go build -v -o build_assets/EasierConnect -trimpath -ldflags "-s -w -buildid=" .
+          ls -al "${PWD}/build_assets"
+          cp build_assets/${{ matrix.desc }}/EasierConnect build_assets/EasierConnect
       - name: Run UPX
+        if: matrix.host_os != 'macos-11'
         uses: crazy-max/ghaction-upx@v2
         with:
           version: latest
@@ -85,12 +185,12 @@ jobs:
       - name: Rename Windows EasierConnect
         if: matrix.goos == 'windows'
         run: |
-          cd ./build_assets || exit 1
+          cd build_assets || exit 1
           mv EasierConnect EasierConnect.exe
       - name: Create ZIP archive
         run: |
           pushd build_assets || exit 1
-          zip -9vr ../EasierConnect-GUI-$ASSET_NAME.zip .
+          zip -9vr ../EasierConnect-GUI-${{ matrix.desc }}.zip .
           popd || exit 1
       
       - name: Upload release binary
@@ -98,4 +198,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          gh release upload ${{ github.event.release.tag_name }} EasierConnect-GUI-${{ steps.get_filename.outputs.ASSET_NAME }}.zip
+          gh release upload ${{ github.event.release.tag_name }} EasierConnect-GUI-${{ matrix.desc }}.zip
