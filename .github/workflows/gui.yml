@@ -86,7 +86,7 @@ jobs:
           desc: ${{ matrix.desc }}
 
           # Not required, but speeds up builds
-          githubToken: ${{ github.token }}
+      #    githubToken: ${{ github.token }}
 
           # Mount the artifacts directory as /artifacts in the container
           dockerRunArgs: |
@@ -129,9 +129,9 @@ jobs:
               linux)
                 case "${{ matrix.goarch }}" in
                   arm64)
-                    apt-get install -y gcc-arm*
-                    go env -w CC=arm-linux-gnueabi-gcc
-                    go env -w GOARM=${{ matrix.goarm }}
+                    apt-cache search aarch64 | grep "GNU C"
+                    apt-get install -y gcc-aarch64-linux-gnu
+                    go env -w CC=aarch64-linux-gnu-gcc
                     ;;
                   amd64)
                     
@@ -155,6 +155,7 @@ jobs:
             export GOROOT=/usr/local/go
             export PATH=$GOROOT/bin:$PATH
             go version
+            go env
             cp -r /buildDir /tmp/buildDir
             cd /tmp/buildDir
             go build -v -o build_assets/${{ matrix.desc }}/EasierConnect -trimpath -ldflags "-s -w -buildid=" .
