@@ -212,9 +212,9 @@ func (h *DefaultHandle) myDialer(network string, laddr *net.UDPAddr, addr string
 
 	dnsResult, err := h.resolveDns(network, domain)
 
-	doProxy := h.shouldProxy(domain, port) || h.shouldProxy(dnsResult.String(), port)
+	doProxy := err == nil && (h.shouldProxy(domain, port) || h.shouldProxy(dnsResult.String(), port))
 
-	if err == nil && doProxy {
+	if doProxy {
 		addrTarget := tcpip.FullAddress{
 			NIC:  defaultNIC,
 			Port: uint16(port),
