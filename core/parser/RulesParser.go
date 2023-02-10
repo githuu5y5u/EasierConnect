@@ -227,7 +227,7 @@ func ParseResourceLists(host, twfID string, debug bool) {
 
 	if !ok || ResourceList.Rcs.Rc == nil || len(ResourceList.Rcs.Rc) <= 0 || ResourceList.Dns.Data == "" {
 		if res != "" {
-			log.Printf("try parsing by regexp")
+			log.Printf("try parsing ResourceLists by regexp")
 
 			escapeReplacementMap := map[string]string{
 				"&nbsp;": string(rune(160)),
@@ -277,7 +277,7 @@ func ParseResourceLists(host, twfID string, debug bool) {
 			log.Printf("Parsed %v Dns rules", config.GetDnsRuleLen())
 		}
 	} else {
-		log.Printf("try parsing by goXml")
+		log.Printf("try parsing ResourceLists by goXml")
 
 		processRcsData(ResourceList, debug, &waitChan, &cpuNumber)
 
@@ -292,5 +292,45 @@ func ParseResourceLists(host, twfID string, debug bool) {
 
 func ParseConfLists(host, twfID string, debug bool) {
 	conf := config.Conf{}
-	_, _ = ParseXml(&conf, host, config.PathConf, twfID)
+	result, ok := ParseXml(&conf, host, config.PathConf, twfID)
+
+	log.Println("Processing ConfList.")
+
+	if !ok {
+		if result != "" {
+			var dns1, dns2 string
+			iptunDnsRegexp := regexp2.MustCompile("(?<=<L3VPN iptunDns=\")[0-9A-Za-z:.-]*?(?=\")", 0)
+			iptunDnsRegexpMatches, err := iptunDnsRegexp.FindStringMatch(result)
+
+			if err != nil {
+				log.Println("Cannot parse iptunDns.")
+				return
+			}
+
+			dns1 = iptunDnsRegexpMatches.String()
+
+			config.AppendDnsServer(strings.TrimSpace(dns1))
+
+			iptunDnsbakRegexp := regexp2.MustCompile("(?<=iptunDnsBak=\")[0-9A-Za-z:.-]*?(?=\")", 0)
+			iptunDnsbakRegexpMatches, err := iptunDnsbakRegexp.FindStringMatch(result)
+
+			if err != nil {
+				log.Println("Cannot parse iptunbakDns.")
+				return
+			}
+
+			dns2 = iptunDnsbakRegexpMatches.String()
+
+			config.AppendDnsServer(strings.TrimSpace(dns2))
+
+			log.Printf("Server dns server (parsed by regExp): [%s] [%s]", dns1, dns2)
+		}
+	} else {
+		dns1 := conf.L3VPN.IptunDns
+		dns2 := conf.L3VPN.IptunDnsBak
+
+		config.AppendDnsServer(dns1, dns2)
+
+		log.Printf("Server dns server (parsed by goXml): [%s] [%s]", dns1, dns2)
+	}
 }

@@ -171,6 +171,11 @@ func EasierConnectUI() {
 
 				log.Println("Current Mode: ", mode.Selected)
 
+				// TODO:: ADD SETTING FOR THIS
+				core.ParseServConfig = true
+
+				core.SocksBind = socks5.Text
+
 				if mode.Selected == "ECAgent" {
 					core.StartECAgent()
 				} else {
@@ -208,7 +213,7 @@ func EasierConnectUI() {
 			width := 52
 			result := <-rxChan
 
-			if len(console.Objects) > 50 {
+			if len(console.Objects) > 100 {
 				console.Remove(console.Objects[0])
 			}
 

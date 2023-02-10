@@ -48,7 +48,9 @@ var ECAgentPort int
 
 func HelloServer(w http.ResponseWriter, req *http.Request) {
 	reqMap := make(map[string]string)
-	log.Printf("Simple ECAgent #> ClientRequest: %s \n", req.RequestURI)
+	if DebugDump {
+		log.Printf("Simple ECAgent #> ClientRequest: %s \n", req.RequestURI)
+	}
 
 	if req.RequestURI == "/ECAgent/" {
 		_, err := w.Write([]byte("Init ECAgent env successfully. You can login to vpn now."))

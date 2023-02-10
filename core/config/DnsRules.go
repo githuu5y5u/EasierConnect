@@ -7,6 +7,7 @@ import (
 
 // domain[ip]
 var dnsRules *hashmap.Map[string, string]
+var dnsServers []string
 
 func AppendSingleDnsRule(domain, ip string, debug bool) {
 	if dnsRules == nil {
@@ -34,4 +35,12 @@ func GetDnsRuleLen() int {
 	} else {
 		return 0
 	}
+}
+
+func AppendDnsServer(ser ...string) {
+	dnsServers = append(dnsServers, ser...)
+}
+
+func GetDnsServer() []string {
+	return dnsServers
 }
