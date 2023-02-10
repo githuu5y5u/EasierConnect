@@ -7,6 +7,6 @@ TODO list:
 > 3. UDP protocol support  (√)
 > 4. makes GUI compile separately and makes the main function as core Module  (√)
 ------------------------------------------------------------------------------------------------
-`Dns` 因为没有相应环境，所以没办法测试，希望有好心人能反馈一下
+`Dns Server` 因为没有相应环境，所以没办法测试，希望有好心人能反馈一下
 其中 conf 里面是有 `Exception` 规则的
 目前看来规则貌似主要集中在 `localhost` 之类的
