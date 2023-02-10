@@ -1,4 +1,4 @@
-name: Release
+name: Core Release
 
 on:
   release:
@@ -71,7 +71,7 @@ jobs:
       GOOS: ${{ matrix.goos }}
       GOARCH: ${{ matrix.goarch }}
       GOARM: ${{ matrix.goarm }}
-      CGO_ENABLED: 1
+      CGO_ENABLED: 0
 
     steps:
       - name: Checkout codebase
@@ -82,7 +82,7 @@ jobs:
         run: |
           export _NAME=$GOOS-$GOARCH$GOARM
           echo "GOOS: $GOOS, GOARCH: $GOARCH, GOARM: $GOARM, RELEASE_NAME: $_NAME"
-          echo "::set-output name=ASSET_NAME::$_NAME"
+          echo "ASSET_NAME=$_NAME" >> $GITHUB_OUTPUT
           echo "ASSET_NAME=$_NAME" >> $GITHUB_ENV
       - name: Set up Go
         uses: actions/setup-go@v3
@@ -95,7 +95,17 @@ jobs:
       - name: Build
         run: |
           mkdir -p build_assets
-          go build -v -o build_assets/EasierConnect -trimpath -tags nogui -ldflags "-s -w -buildid=" .
+          go build -v -o build_assets/EasierConnect -trimpath -ldflags "-s -w -buildid=" .
+      - name: Run UPX
+        if: |
+            (matrix.goos == 'windows' && matrix.goarch != 'arm' && matrix.goarch != 'arm64') || 
+            (matrix.goos == 'linux' && matrix.goarch != 'riscv64' && matrix.goarch != 'mips64' && matrix.goarch != 'mips64le')
+        uses: crazy-max/ghaction-upx@v2
+        with:
+          version: latest
+          files: |
+            ./build_assets/EasierConnect
+          args: -9
       - name: Rename Windows EasierConnect
         if: matrix.goos == 'windows'
         run: |
