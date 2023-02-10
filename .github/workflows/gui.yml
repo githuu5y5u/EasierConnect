@@ -157,8 +157,9 @@ jobs:
             go version
             go env
             cp -r /buildDir /tmp/buildDir
-            cd /tmp/buildDir
-            go build -v -o build_assets/${{ matrix.desc }}/EasierConnect -trimpath -ldflags "-s -w -buildid=" .
+            cd /tmp/buildDir/gui
+            go build -v -o ../build_assets/${{ matrix.desc }}/EasierConnect -trimpath -ldflags "-s -w -buildid=" .
+            cd ../
             ls build_assets
             cp build_assets/${{ matrix.desc }}/EasierConnect /buildDir/build_assets/${{ matrix.desc }}/EasierConnect
       - name: Setup Go environment for osx
@@ -170,7 +171,8 @@ jobs:
         if: matrix.host_os == 'macos-11'
         run: |
              go version
-             CGO_ENABLED=1 go build -v -o build_assets/${{ matrix.desc }}/EasierConnect -trimpath -ldflags "-s -w -buildid=" .
+             cd gui
+             CGO_ENABLED=1 go build -v -o ../build_assets/${{ matrix.desc }}/EasierConnect -trimpath -ldflags "-s -w -buildid=" .
       - name: Copy the result from docker output folder
         run: |
           ls -al "${PWD}/build_assets"
