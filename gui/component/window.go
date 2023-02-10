@@ -1,11 +1,9 @@
 package component
 
 import (
+	"EasierConnect.gui/listener"
+	"EasierConnect.gui/resources"
 	"EasierConnect/core"
-	"EasierConnect/core/config"
-	"EasierConnect/gui/resources"
-	"EasierConnect/listener"
-	"encoding/base64"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/canvas"
@@ -36,11 +34,11 @@ var (
 func EasierConnectUI() {
 	ecApp := app.NewWithID(APPID)
 
-	//TODO:: BETTER ICON
-	staticIcon, err := base64.StdEncoding.DecodeString(resources.IconBase64)
-	if err == nil {
-		ecApp.SetIcon(&fyne.StaticResource{StaticName: "icon", StaticContent: staticIcon})
-	}
+	//TODO:: ICON
+	//staticIcon, err := base64.StdEncoding.DecodeString(resources.IconBase64)
+	//if err == nil {
+	//	ecApp.SetIcon(&fyne.StaticResource{StaticName: "icon", StaticContent: staticIcon})
+	//}
 	pref := ecApp.Preferences()
 	mainWindow := ecApp.NewWindow(AppLabel)
 	mainWindow.Resize(fyne.Size{Height: float32(WindowHeight), Width: float32(WindowWidth)})
@@ -266,7 +264,7 @@ func EasierConnectUI() {
 			desk.SetSystemTrayMenu(m)
 		}
 		mainWindow.SetCloseIntercept(func() {
-			dialog.ShowConfirm("Confirmation", config.InfoExitTip, func(option bool) {
+			dialog.ShowConfirm("Confirmation", resources.InfoExitTip, func(option bool) {
 				if option {
 					confirmation.Close()
 					mainWindow.Close()
@@ -276,7 +274,7 @@ func EasierConnectUI() {
 				confirmation.Hide()
 			}, confirmation)
 
-			dialog.ShowConfirm("Confirmation", config.InfoTrayTip, func(option bool) {
+			dialog.ShowConfirm("Confirmation", resources.InfoTrayTip, func(option bool) {
 				if option {
 					hide := func() {
 						<-time.After(200 * time.Millisecond)

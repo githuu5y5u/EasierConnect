@@ -1,7 +1,7 @@
 package core
 
 import (
-	"EasierConnect/parser"
+	"EasierConnect/core/parser"
 	"errors"
 	"fmt"
 	"log"

@@ -2,7 +2,7 @@ package core
 
 import (
 	"EasierConnect/core/config"
-	"EasierConnect/parser"
+	"EasierConnect/core/parser"
 	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
