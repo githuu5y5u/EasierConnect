@@ -2,19 +2,14 @@ package config
 
 import (
 	"github.com/cornelk/hashmap"
-	"log"
 )
 
 // domain[[]int {min, max}]
 var domainRules *hashmap.Map[string, []int]
 
-func AppendSingleDomainRule(domain string, ports []int, debug bool) {
+func AppendSingleDomainRule(domain string, ports []int) {
 	if domainRules == nil {
 		domainRules = hashmap.New[string, []int]()
-	}
-
-	if debug {
-		log.Printf("AppendSingleDomainRule: %s[%v]", domain, ports)
 	}
 
 	domainRules.Set(domain, ports)

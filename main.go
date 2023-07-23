@@ -2,7 +2,7 @@ package main
 
 import (
 	"EasierConnect/core"
-	"EasierConnect/listener"
+	"EasierConnect/core/listener"
 	"flag"
 	"log"
 )

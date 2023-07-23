@@ -35,8 +35,6 @@ func ParseXml(in any, host string, path string, twfid string) (string, bool) {
 		}
 	}(resp.Body)
 
-	//    log.Printf("%s \n", string(buf[:]))
-
 	err = xml.Unmarshal(buf.Bytes(), &in)
 	if err != nil {
 		log.Print(err)

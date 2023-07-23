@@ -2,7 +2,6 @@ package config
 
 import (
 	"github.com/cornelk/hashmap"
-	"log"
 )
 
 // domain[ip]
@@ -11,10 +10,6 @@ var dnsRules *hashmap.Map[string, string]
 func AppendSingleDnsRule(domain, ip string, debug bool) {
 	if dnsRules == nil {
 		dnsRules = hashmap.New[string, string]()
-	}
-
-	if debug {
-		log.Printf("AppendSingleDnsRule: %s[%s]", domain, ip)
 	}
 
 	dnsRules.Set(domain, ip)

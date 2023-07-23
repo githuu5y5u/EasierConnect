@@ -1,28 +1,20 @@
 package config
 
-import (
-	"log"
-)
-
 var Ipv4RangeRules *[]Ipv4RangeRule
 
 // Ipv4RangeRule Ipv4 rule with range
 type Ipv4RangeRule struct {
 	Rule  string
+	IP    [][]byte
 	Ports []int
-	CIDR  bool
 }
 
-func AppendSingleIpv4RangeRule(rule string, ports []int, cidr bool, debug bool) {
+func AppendSingleIpv4RangeRule(rule string, ip [][]byte, ports []int) {
 	if Ipv4RangeRules == nil {
 		Ipv4RangeRules = &[]Ipv4RangeRule{}
 	}
 
-	if debug {
-		log.Printf("AppendSingleIpv4RangeRule: %s%v cidr: %v", rule, ports, cidr)
-	}
-
-	*Ipv4RangeRules = append(*Ipv4RangeRules, Ipv4RangeRule{Rule: rule, Ports: ports, CIDR: cidr})
+	*Ipv4RangeRules = append(*Ipv4RangeRules, Ipv4RangeRule{Rule: rule, IP: ip, Ports: ports})
 }
 
 func GetIpv4Rules() *[]Ipv4RangeRule {
@@ -34,7 +26,7 @@ func IsIpv4RuleAvailable() bool {
 }
 
 func GetIpv4RuleLen() int {
-	if IsDomainRuleAvailable() {
+	if IsIpv4RuleAvailable() {
 		return len(*Ipv4RangeRules)
 	} else {
 		return 0

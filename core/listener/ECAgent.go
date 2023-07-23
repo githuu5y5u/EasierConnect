@@ -3,7 +3,9 @@ package listener
 import (
 	"EasierConnect/core"
 	"EasierConnect/core/config"
-	"EasierConnect/parser"
+	"EasierConnect/core/parser"
+	"EasierConnect/core/structs"
+	"EasierConnect/core/tool"
 	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
@@ -49,7 +51,6 @@ var ECAgentPort int
 
 func HelloServer(w http.ResponseWriter, req *http.Request) {
 	reqMap := make(map[string]string)
-	log.Printf("Simple ECAgent #> ClientRequest: %s \n", req.RequestURI)
 
 	if req.RequestURI == "/ECAgent/" {
 		_, err := w.Write([]byte("Init ECAgent env successfully. You can login to vpn now."))
@@ -60,7 +61,12 @@ func HelloServer(w http.ResponseWriter, req *http.Request) {
 	}
 
 	constructRespon := func(operate, result, message, debug string) string {
-		return "(\"{\\\"type\\\":\\\"" + operate + "\\\",\\\"result\\\":\\\"" + result + "\\\",\\\"message\\\":\\\"" + message + "\\\",\\\"debug\\\":\\\"" + debug + "\\\"}\");"
+		return fmt.Sprintf(`("%s");`, tool.Jsonify(map[string]string{
+			"type":    operate,
+			"result":  result,
+			"message": message,
+			"debug":   debug,
+		}))
 	}
 
 	form := Env.regexp.FindAllString(req.RequestURI, -1)
@@ -68,10 +74,6 @@ func HelloServer(w http.ResponseWriter, req *http.Request) {
 	for _, ent := range form {
 		entry := strings.Split(ent, "=")
 		reqMap[entry[0]] = entry[1]
-
-		if core.DebugDump {
-			fmt.Printf("request > %s\n", ent)
-		}
 	}
 
 	response := strings.Builder{}
@@ -116,7 +118,7 @@ func HelloServer(w http.ResponseWriter, req *http.Request) {
 				ECAgentResult.server = server
 				ECAgentResult.port = port
 
-				log.Printf("server: %s port: %s\n", server, port)
+				log.Printf("Configued Remote Point > %s : %s\n", server, port)
 
 				break
 			case "TWFID":
@@ -156,10 +158,10 @@ func HelloServer(w http.ResponseWriter, req *http.Request) {
 		//op=GetConfig&arg1=1&token=&Guid=&callback=EA_cbxxxxx
 
 		if reqMap["arg1"] == "1" {
-			conf := config.Conf{}
+			conf := structs.Conf{}
 			_, ok := parser.ParseXml(&conf, ECAgentResult.server, config.PathConf, ECAgentResult.twfID)
 
-			confWeb := config.ConfWeb{Conf: conf}
+			confWeb := structs.ConfWeb{Conf: conf}
 
 			if ok {
 				result, err := json.Marshal(confWeb)
@@ -170,7 +172,7 @@ func HelloServer(w http.ResponseWriter, req *http.Request) {
 
 				replacementMap := map[string]string{}
 
-				sh1t := strings.ReplaceAll(strings.ReplaceAll(string(result), "\\", "\\\\"), "\"", "\\\"")
+				sh1t := strings.ReplaceAll(strings.ReplaceAll(string(result), `\`, `\\`), `"`, `\"`)
 
 				for from, to := range replacementMap {
 					sh1t = strings.ReplaceAll(sh1t, from, to)
@@ -181,10 +183,10 @@ func HelloServer(w http.ResponseWriter, req *http.Request) {
 				response.WriteString("(\"" + "\");")
 			}
 		} else if reqMap["arg1"] == "2" {
-			res := config.Resource{}
+			res := structs.Resource{}
 			_, ok := parser.ParseXml(&res, ECAgentResult.server, config.PathRlist, ECAgentResult.twfID)
 
-			ResourceList := config.ResourceWeb{Resource: res}
+			ResourceList := structs.ResourceWeb{Resource: res}
 
 			if ok {
 				result, err := json.Marshal(ResourceList)
@@ -193,30 +195,7 @@ func HelloServer(w http.ResponseWriter, req *http.Request) {
 					return
 				}
 
-				replacementMap := map[string]string{
-					"ID":             "id",
-					"Name":           "name",
-					"Type":           "type",
-					"Proto":          "proto",
-					"Svc":            "svc",
-					"Host":           "host",
-					"Port":           "port",
-					"EnableDisguise": "enable_disguise",
-					"Note":           "note",
-					"Attr":           "attr",
-					"AppPath":        "app_path",
-					"RcGrpID":        "rc_grp_id",
-					"RcLogo":         "rc_logo",
-					"Authorization":  "authorization",
-					"AuthSpID":       "auth_sp_id",
-					"Selectid":       "selectid",
-				}
-
-				sh1t := strings.ReplaceAll(strings.ReplaceAll(string(result), "\\", "\\\\"), "\"", "\\\"")
-
-				for from, to := range replacementMap {
-					sh1t = strings.ReplaceAll(sh1t, from, to)
-				}
+				sh1t := strings.ReplaceAll(strings.ReplaceAll(string(result), `\`, `\\`), `"`, `\"`)
 
 				response.WriteString("(\"" + sh1t + "\");")
 			} else {
@@ -245,14 +224,10 @@ func HelloServer(w http.ResponseWriter, req *http.Request) {
 		response.WriteString("e(\"1\");")
 		break
 	default:
-		log.Printf("Unknown action %s\n", action)
+		break
 	}
 
 	w.Header().Set("Content-Type", "text/javascript; charset=UTF-8")
-
-	if core.DebugDump {
-		fmt.Printf("response > %s \n", response.String())
-	}
 
 	_, err := w.Write([]byte(response.String()))
 	if err != nil {
